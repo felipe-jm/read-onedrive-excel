@@ -1,0 +1,27 @@
+{
+  "name": "read-excel-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/msal-node": "^3.6.4",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.1",
+    "fastify": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
