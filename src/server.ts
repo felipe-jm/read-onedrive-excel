@@ -18,9 +18,9 @@ const TENANT_ID = process.env.TENANT_ID;
 
 // Extracted from
 // https://excel.cloud.microsoft/open/onedrive/?docId=D1B4FC2F8C816AEE%21sa5cf69d6228847c78cf590c44bceed4d&driveId=D1B4FC2F8C816AEE
-const EXCEL_DRIVE_ID = "D1B4FC2F8C816AEE";
-const EXCEL_ITEM_ID = "sa5cf69d6228847c78cf590c44bceed4d";
-const WORK_SHEET_NAME = "Sheet1";
+const EXCEL_DRIVE_ID = process.env.EXCEL_DRIVE_ID;
+const EXCEL_ITEM_ID = process.env.EXCEL_ITEM_ID;
+const WORK_SHEET_NAME = "historico";
 const TABLE_NAME = "Table1";
 
 const config = {
@@ -31,6 +31,37 @@ const config = {
   excelItemId: EXCEL_ITEM_ID,
   worksheetName: WORK_SHEET_NAME,
   tableName: TABLE_NAME,
+};
+
+const listAvailableWorksheets = async (
+  accessToken: string,
+  driveId: string,
+  excelWorkbookId: string
+) => {
+  try {
+    const response = await axios.get(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${excelWorkbookId}/workbook/worksheets`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("📋 Available worksheets:");
+    response.data.value.forEach((sheet: any, index: number) => {
+      console.log(`  ${index + 1}. "${sheet.name}"`);
+    });
+
+    return response.data.value;
+  } catch (err: any) {
+    console.error(
+      "❌ Error listing worksheets:",
+      err.response?.data || err.message
+    );
+    return [];
+  }
 };
 
 const getExcelDataFromSharepoint = async () => {
@@ -63,8 +94,12 @@ const getExcelDataFromSharepoint = async () => {
 
     console.log("Token acquired successfully");
 
-    const excelWorkbookId = config.excelItemId; // In this context, the itemId is the workbook ID
-    const driveId = config.excelDriveId;
+    const excelWorkbookId = config.excelItemId!; // In this context, the itemId is the workbook ID
+    const driveId = config.excelDriveId!;
+
+    // List available worksheets first
+    console.log("\n📋 Checking available worksheets...");
+    await listAvailableWorksheets(accessToken, driveId, excelWorkbookId);
 
     // 2. Make direct axios call instead of using Graph client
     // Example for reading a named table:
@@ -76,6 +111,9 @@ const getExcelDataFromSharepoint = async () => {
     // Alternative for reading a specific range:
     // const excelApiEndpoint = `/drives/${driveId}/items/${excelWorkbookId}/workbook/worksheets/${config.worksheetName}/range(address='A1:Z100')`;
 
+    console.log(
+      `\n🔍 Attempting to access worksheet: "${config.worksheetName}"`
+    );
     console.log("Making API call to:", excelApiEndpoint);
 
     const response = await axios.get(
@@ -96,8 +134,26 @@ const getExcelDataFromSharepoint = async () => {
     console.log("Successfully read Excel Data for Cron Job:", excelData);
 
     return excelData;
-  } catch (err) {
-    console.error("err", err);
+  } catch (err: any) {
+    console.error("❌ Error accessing Excel file:");
+
+    if (err.response) {
+      // The request was made and the server responded with a status code
+      console.error("Status:", err.response.status);
+      console.error("Status Text:", err.response.statusText);
+      console.error(
+        "API Response:",
+        JSON.stringify(err.response.data, null, 2)
+      );
+      console.error("Request URL:", err.config?.url);
+    } else if (err.request) {
+      // The request was made but no response was received
+      console.error("No response received:", err.message);
+    } else {
+      // Something happened in setting up the request
+      console.error("Request setup error:", err.message);
+    }
+
     throw err;
   }
 };
