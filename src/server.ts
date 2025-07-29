@@ -17,8 +17,8 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const TENANT_ID = process.env.TENANT_ID;
 
 // SharePoint configuration - extracted from SharePoint URL
-const SHAREPOINT_SITE_URL = "gadocerto902.sharepoint.com";
-const DOCUMENT_ID = "ab9a6aeb-9387-455f-9be5-9e8be5d4c749"; // From sourcedoc parameter
+const SHAREPOINT_SITE_URL = process.env.SHAREPOINT_SITE_URL;
+const DOCUMENT_ID = process.env.DOCUMENT_ID; // From sourcedoc parameter
 const WORK_SHEET_NAME = "historico";
 const TABLE_NAME = "Table1";
 
@@ -293,6 +293,73 @@ const listAvailableWorksheets = async (
   }
 };
 
+// Transform raw Excel array data into structured JSON
+const transformExcelData = (rawData: any[][]) => {
+  if (!Array.isArray(rawData) || rawData.length === 0) {
+    console.log("⚠️ No data to transform");
+    return [];
+  }
+
+  console.log(`🔄 Transforming ${rawData.length} rows of Excel data...`);
+
+  const transformedData = rawData
+    .map((row: any[], index: number) => {
+      // Skip if row doesn't have enough data
+      if (!row || row.length < 9) {
+        console.log(
+          `⚠️ Row ${index + 1} has insufficient data (${
+            row?.length
+          } columns), skipping`
+        );
+        return null;
+      }
+
+      // Clean and parse numeric values
+      const parseNumber = (value: any) => {
+        if (typeof value === "number") return value;
+        if (typeof value === "string") {
+          // Remove spaces and replace comma with dot for Brazilian decimal format
+          const cleaned = value.trim().replace(",", ".");
+          const parsed = parseFloat(cleaned);
+          return isNaN(parsed) ? value : parsed;
+        }
+        return value;
+      };
+
+      // Clean string values
+      const cleanString = (value: any) => {
+        return typeof value === "string" ? value.trim() : value;
+      };
+
+      const transformedRow = {
+        // Index 0: table id (ignored as requested)
+        data: cleanString(row[1]), // Index 1: data
+        sexo: cleanString(row[2]), // Index 2: sexo
+        categoria_nome: cleanString(row[3]), // Index 3: categoria_nome
+        peso_arroba: parseNumber(row[4]), // Index 4: peso_arroba
+        peso_kg: parseNumber(row[5]), // Index 5: peso_kg
+        preco_kg: parseNumber(row[6]), // Index 6: preco_kg
+        preco_arroba: parseNumber(row[7]), // Index 7: preco_arroba
+        preco_cabeca: parseNumber(row[8]), // Index 8: preco_cabeca
+      };
+
+      return transformedRow;
+    })
+    .filter((row) => row !== null); // Remove null rows
+
+  console.log(
+    `✅ Successfully transformed ${transformedData.length} valid rows`
+  );
+
+  // Show a sample of the transformed data
+  if (transformedData.length > 0) {
+    console.log("📊 Sample transformed data (first 2 rows):");
+    console.log(JSON.stringify(transformedData.slice(0, 2), null, 2));
+  }
+
+  return transformedData;
+};
+
 const getExcelDataFromSharepoint = async () => {
   try {
     console.log("config", config);
@@ -369,7 +436,14 @@ const getExcelDataFromSharepoint = async () => {
     const excelData = response.data.value || response.data.values; // For tables, it's .value; for usedRange, it's .values
     console.log("Successfully read Excel Data for Cron Job:", excelData);
 
-    return excelData;
+    // Transform the raw array data into structured JSON
+    const transformedData = transformExcelData(excelData);
+    console.log("📋 Final transformed data ready for use:", {
+      totalRows: transformedData.length,
+      sampleRow: transformedData[0] || null,
+    });
+
+    return transformedData;
   } catch (err: any) {
     console.error("❌ Error accessing Excel file:");
 
@@ -400,7 +474,11 @@ const start = async () => {
     console.log("🚀 Server is running on http://localhost:3000");
 
     const excelData = await getExcelDataFromSharepoint();
-    console.log("Excel Data:", excelData);
+    console.log("📊 Structured Excel Data:", {
+      totalRecords: excelData.length,
+      firstRecord: excelData[0] || null,
+      lastRecord: excelData[excelData.length - 1] || null,
+    });
   } catch (err) {
     server.log.error(err);
     process.exit(1);
