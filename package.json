@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/server.ts",
+    "dev:google-sheets": "nodemon --watch src --exec ts-node src/google-sheets-reader.ts",
+    "dev:integrated": "nodemon --watch src --exec ts-node src/integrated-server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "start:google-sheets": "node dist/google-sheets-reader.js",
+    "start:integrated": "node dist/integrated-server.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +20,9 @@
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1",
-    "fastify": "^5.4.0"
+    "fastify": "^5.4.0",
+    "google-auth-library": "^10.2.0",
+    "googleapis": "^154.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",

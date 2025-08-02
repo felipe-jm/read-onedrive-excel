@@ -29,10 +29,18 @@ Esta aplicação demonstra como:
 2. **Configure as variáveis de ambiente:**
    Crie um arquivo `.env` baseado no `.env.example` com:
 
-   ```
+   ```env
    CLIENT_ID=seu_client_id_azure
    CLIENT_SECRET=seu_client_secret_azure
    TENANT_ID=seu_tenant_id_azure
+   EXCEL_DRIVE_ID=seu_drive_id_excel
+   EXCEL_ITEM_ID=seu_item_id_excel
+   SHAREPOINT_SITE_URL=seu_site_sharepoint
+   DOCUMENT_ID=seu_documento_id
+
+   GOOGLE_SPREADSHEET_ID=seu_spreadsheet_id_google
+   GOOGLE_SHEET_NAME=seu_nome_da_planilha_google
+   GOOGLE_SHEET_RANGE=seu_range_da_planilha_google
    ```
 
 3. **Execute a aplicação:**
